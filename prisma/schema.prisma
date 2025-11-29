@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Document {
+  id String @id @default(uuid())
+  filename String
+  mimeType String
+  createdAt DateTime @default(now())
+  chunks Chunk[]
+}
+
+model Chunk {
+  id String @id @default(uuid())
+  documentId String
+  index Int
+  text String
+  embedding Bytes
+  createdAt DateTime @default(now())
+  Document Document @relation(fields: [documentId], references: [id])
+}
+
+model Session {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id String @id @default(uuid())
+  sessionId String
+  role String
+  content String
+  sources Json?
+  createdAt DateTime @default(now())
+  Session Session @relation(fields: [sessionId], references: [id])
+}

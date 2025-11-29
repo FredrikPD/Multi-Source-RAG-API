@@ -1,0 +1,42 @@
+{
+  "name": "multi-source-rag-api",
+  "version": "1.0.0",
+  "description": "Multi-Source Knowledge RAG API take-home",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+
+    "eval": "node src/eval/runEvaluation.js",
+
+    "pretest": "prisma generate",
+    "test": "NODE_ENV=test vitest",
+    "test:unit": "NODE_ENV=test vitest tests/unit/**/*.test.js",
+    "test:integration": "NODE_ENV=test vitest tests/integration/*.test.js",
+    "test:watch": "NODE_ENV=test vitest --watch",
+
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "7.0.1",
+    "@prisma/client": "7.0.1",
+    "@qdrant/js-client-rest": "^1.16.1",
+    "better-sqlite3": "^12.4.6",
+    "csv-parse": "^5.5.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "form-data": "^4.0.5",
+    "mammoth": "^1.6.0",
+    "multer": "^2.0.2",
+    "openai": "^4.57.0",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "prisma": "7.0.1",
+    "supertest": "^7.1.4",
+    "vitest": "^4.0.14"
+  }
+}

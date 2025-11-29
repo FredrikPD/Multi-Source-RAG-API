@@ -1,0 +1,61 @@
+# Node.js / JavaScript
+prompts.txt
+manual.txt
+
+# dependencies
+/node_modules/
+jspm_packages/
+  
+# build outputs
+/dist/
+/build/
+/out/
+/. next/   # if using Next.js
+/.parcel-cache/
+/.cache/
+/web_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data / process files
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage & testing
+coverage/
+.nyc_output/
+*.lcov
+
+#Caches & temporary files
+.eslintcache
+*.tsbuildinfo
+.rpt2_cache/
+.rts2_cache_*/   # for e.g. microbundle
+.node_repl_history
+
+# OS-specific / editor / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+
+# Environment / config files
+.env
+.env.local
+.env.docker
+.env.*   # if you have multiple env files
+
+# Package / lock files (if undesirable) — adjust per project
+# package-lock.json
+# yarn.lock
+
+# Tarballs / package archives
+*.tgz

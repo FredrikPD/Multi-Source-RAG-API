@@ -1,0 +1,173 @@
+{
+  "summary": {
+    "totalCases": 18,
+    "macroPrecision": 0.3333,
+    "macroRecall": 0.8056,
+    "macroF1": 0.4611,
+    "accuracy": 0.8824
+  },
+  "cases": [
+    {
+      "id": "refund_physical_timeline",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "refund_digital_conditions",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "refund_rma_timeline",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "refund_nonrefundable_items",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "refund_shipping_responsibility",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "refund_inspection_process",
+      "tp": 0,
+      "fp": 3,
+      "fn": 1,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "id": "sla_sev1_standard_response",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "sla_sev3_update_frequency",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "sla_escalation_timeline",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "sla_containment_actions",
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.6667,
+      "recall": 1,
+      "f1": 0.8
+    },
+    {
+      "id": "sla_languages_supported",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "sla_outage_obligations",
+      "tp": 0,
+      "fp": 3,
+      "fn": 1,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "id": "warranty_coverage_duration",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "warranty_included_services",
+      "tp": 1,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.3333,
+      "recall": 1,
+      "f1": 0.5
+    },
+    {
+      "id": "warranty_exclusions",
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.6667,
+      "recall": 1,
+      "f1": 0.8
+    },
+    {
+      "id": "warranty_claim_process",
+      "tp": 2,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.6667,
+      "recall": 1,
+      "f1": 0.8
+    },
+    {
+      "id": "warranty_repair_timeline",
+      "tp": 0,
+      "fp": 3,
+      "fn": 0,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "id": "warranty_shipping_responsibility",
+      "tp": 1,
+      "fp": 2,
+      "fn": 1,
+      "precision": 0.3333,
+      "recall": 0.5,
+      "f1": 0.4
+    }
+  ]
+}
