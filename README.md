@@ -8,8 +8,8 @@ flowchart TD
     %% External actors
     User[(User / Client)]
     DB[(Primary DB)]
-    VectorDB[(Vector Store)]
-    LLMAPI[(External LLM API)]
+    VectorDB[(Vector DB)]
+    LLMAPI[(OpenAI API)]
 
     %% Entry point
     User -->|HTTP| Server
@@ -47,6 +47,7 @@ flowchart TD
     subgraph LLM
         llmClient[llmClient.js]
         followup[followup.js]
+        queryEnhancement[queryEnhancement.js]
     end
 
     dbClient[db/client.js]
@@ -70,10 +71,17 @@ flowchart TD
     chatService --> vectorStore
     chatService --> llmClient
     chatService --> followup
+    chatService --> queryEnhancement
+
+    %% DB + external deps
+    chatService --> dbClient
+    ingestService --> dbClient
+    dbClient --> DB
 
     vectorStore --> VectorDB
-    dbClient --> DB
     llmClient --> LLMAPI
+    followup --> LLMAPI
+    queryEnhancement --> LLMAPI
 ```
 
 ### Component Resposibilities
@@ -236,7 +244,7 @@ Base URL defaults to `http://localhost:3000`. All JSON requests require `Content
       "session_id": "<uuid>",
       "answer": "<assistant reply>",
       "sources": [
-        { "document_id": "<uuid>", "chunk_id": "<chunk id>", "score":<similarity>}
+        { "document_id": "<uuid>", "chunk_id": "<chunk id>", "score":"<similarity>"}
       ]
     }
     ```

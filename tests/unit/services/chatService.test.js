@@ -49,7 +49,10 @@ vi.mock("../../../src/services/vectorStore.js", () => ({
 vi.mock("../../../src/llm/llmClient.js", () => ({
   llmClient: {
     generate: vi.fn().mockResolvedValue("mock-answer"),
-  },
+  }
+}));
+
+vi.mock("../../../src/llm/queryEnhancement.js", () => ({
   rewriteQuery: vi.fn().mockResolvedValue("rewritten question about refunds"),
 }));
 
@@ -63,7 +66,8 @@ import { chatWithKnowledge } from "../../../src/services/chatService.js";
 import { prisma } from "../../../src/db/client.js";
 import { embedTexts } from "../../../src/services/embeddings.js";
 import { vectorStore } from "../../../src/services/vectorStore.js";
-import { llmClient, rewriteQuery } from "../../../src/llm/llmClient.js";
+import { llmClient } from "../../../src/llm/llmClient.js";
+import { rewriteQuery } from "../../../src/llm/queryEnhancement.js";
 import { isFollowUpQuestion } from "../../../src/llm/followup.js";
 
 describe("chatWithKnowledge", () => {
@@ -111,14 +115,12 @@ describe("chatWithKnowledge", () => {
       {
         document_id: "doc-1",
         chunk_id: "chunk-1",
-        score: 0.9,
-        text: "Chunk text 1",
+        score: 0.9
       },
       {
         document_id: "doc-1",
         chunk_id: "chunk-2",
-        score: 0.8,
-        text: "Chunk text 2",
+        score: 0.8
       },
     ]);
   });

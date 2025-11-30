@@ -1,7 +1,8 @@
 import { prisma } from "../db/client.js";
 import { embedTexts } from "./embeddings.js";
 import { vectorStore } from "./vectorStore.js";
-import { llmClient, rewriteQuery } from "../llm/llmClient.js";
+import { llmClient } from "../llm/llmClient.js";
+import { rewriteQuery } from "../llm/queryEnhancement.js";
 import { isFollowUpQuestion, buildStandaloneQuestion } from "../llm/followup.js";
 import { randomUUID } from "crypto";
 
