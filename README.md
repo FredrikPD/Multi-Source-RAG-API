@@ -225,6 +225,10 @@ Base URL defaults to `http://localhost:3000`. All JSON requests require `Content
   - `400 Bad Request` `{ "error": "Missing file" }`
 - Errors during processing are surfaced when polling status (see below), not in this response.
 
+```bash
+curl -X POST http://localhost:3000/ingest -F "file=@/path/to/file"
+```
+
 ### GET /ingest/status/:jobId
 - Poll the ingestion job status.
 - Responses:
@@ -233,6 +237,10 @@ Base URL defaults to `http://localhost:3000`. All JSON requests require `Content
   - `400 Bad Request` (unsupported file) `{ "job_id": "<uuid>", "status": "error", "error": "<message>", "code": "UNSUPPORTED_FILE_TYPE" }`
   - `500 Internal Server Error` (other ingest failures) `{ "job_id": "<uuid>", "status": "error", "error": "<message>", "code": "<optional>" }`
   - `404 Not Found` `{ "error": "Job not found" }`
+
+```bash
+curl http://localhost:3000/ingest/status/<jobID>
+```
 
 ### POST /chat
 - Send a chat message to the RAG pipeline. Creates a session automatically if `session_id` is omitted.
@@ -250,6 +258,15 @@ Base URL defaults to `http://localhost:3000`. All JSON requests require `Content
     ```
   - `400 Bad Request` for missing/empty `message` or non-string `session_id`.
 - Notes: history-aware; follow-up questions are rewritten for better retrieval; messages are persisted for the session.
+
+Chat for current session:
+```bash
+curl -X POST http://localhost:3000/chat -H "Content-Type: application/json" -d '{"message": ""}'
+```
+Chat for previous session: 
+```bash
+curl -X POST http://localhost:3000/chat -H "Content-Type: application/json" -d '{"session_id": "", "message": ""}'
+```
 
 ### GET /sessions/:id
 - Retrieve the full chat history for a session.
