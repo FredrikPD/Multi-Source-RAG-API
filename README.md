@@ -1,3 +1,4 @@
+```mermaid
 flowchart TD
     %% === External Actors ===
     User[(User / Client)]
