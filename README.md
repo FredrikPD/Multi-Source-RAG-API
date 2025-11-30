@@ -266,3 +266,53 @@ Base URL defaults to `http://localhost:3000`. All JSON requests require `Content
     ```
   - `400 Bad Request` `{ "error": "Missing or invalid session id" }`
   - `404 Not Found` `{ "error": "Session not found" }`
+
+
+## Testing
+
+The project includes a suite of integration and unit tests built with **Vitest** and **Supertest**. The tests focus on verifying core system behavior, controller logic, async ingestion flow, vector search integration, and chat orchestration.
+
+### Integration Tests
+- **Ingestion API** (`ingestAPI.test.js`)  
+  Validates `/ingest` and `/ingest/status/:jobId`, including job queuing, async processing, error propagation, and missing file handling.
+
+- **Sessions API** (`sessionsAPI.test.js`)  
+  Ensures session retrieval logic works correctly, including Prisma mocks, non-existent sessions, and message shaping.
+
+- **Chat API** (`chatAPI.test.js`)  
+  Confirms `/chat` correctly validates input and returns the service-level response, with the chat service fully mocked.
+
+### Unit Tests
+- **Follow-up Detection** (`followup.test.js`)  
+  Tests NLP heuristics for identifying follow-up questions using a variety of phrasing and edge cases.
+
+- **Chat Orchestration** (`chatService.test.js`)  
+  A test covering the full chat pipeline: session creation, query rewriting, embedding generation, vector search, LLM call, and message persistence.
+
+- **Vector Store** (`vectorStore.test.js`)  
+  Mocks Qdrant and verifies that search results are normalized into the simplified format used by the application.
+
+### Running Tests
+Full suite:
+```bash
+npm run test
+```
+Separate:
+```bash
+npm run test:unit
+npm run test:integration
+```
+
+## Evaluation
+
+Retrieval quality was assessed using 18 custom questions created from the sample documents in `eval/documents`. Each question was run through the actual system so that embeddings, vector search, and chunk retrieval behaved exactly as they do in real usage. For every question, the returned chunks were manually inspected, and the chunks that best answered the question were selected as the ground truth. These chunk IDs were then paired with the corresponding cases in `eval/cases.js`, forming a labeled set used to compute precision, recall, F1, and accuracy.
+
+**Reproducibility note:** the exact results cannot be reproduced now because the SQLite database was cleaned during development, which caused chunk IDs to change. The evaluation logic remains valid, but the specific ground-truth chunk IDs represent the database state at the time of evaluation.
+
+### Results (from `eval/results/evaluation.json`)
+- **Macro Precision:** 0.3333  
+- **Macro Recall:** 0.8056  
+- **Macro F1:** 0.4611  
+- **Accuracy (on cases with a known answer):** 0.8824  
+
+The system demonstrates **high recall**, meaning it usually retrieves the correct passages. However, precision is lower because it often includes additional, irrelevant context. Improving source filtering or top-k selection would likely increase the overall F1 score.

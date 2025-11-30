@@ -1,12 +1,3 @@
-/**
- * labelRefundChunks.js
- *
- * 1. Uploads RefundPolicy.docx using proper multipart/form-data.
- * 2. Runs all RefundPolicy-related questions.
- * 3. Uses full chunk text from /chat response.
- * 4. Saves everything as JSON: eval/results/refund_eval_output.json
- */
-
 import fs from "fs";
 import path from "path";
 import fetch from "node-fetch";
@@ -56,7 +47,7 @@ const DOCUMENT_PATH = path.join(
 
 
 async function ingestDocument() {
-  console.log("\n--- INGESTING RefundPolicy.docx ---");
+  console.log("\nINGESTING RefundPolicy.docx");
 
   if (!fs.existsSync(DOCUMENT_PATH)) {
     throw new Error(`RefundPolicy.docx not found at: ${DOCUMENT_PATH}`);
@@ -141,8 +132,7 @@ async function main() {
   const outputPath = path.join(resultsDir, "Warranty_eval_output.json");
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
 
-  console.log(`\n✅ Saved results to: ${outputPath}`);
-  console.log("Open it and copy correct chunk_ids into evalCases.js.");
+  console.log(`Saved results to: ${outputPath}`);
 }
 
 main().catch((err) => {

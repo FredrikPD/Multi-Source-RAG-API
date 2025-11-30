@@ -36,8 +36,7 @@ async function runEvaluation() {
 
     const precision = tp + fp === 0 ? 0 : tp / (tp + fp);
     const recall = tp + fn === 0 ? 0 : tp / (tp + fn);
-    const f1 =
-      precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+    const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
 
     const result = {
       id: test.id,
@@ -52,11 +51,10 @@ async function runEvaluation() {
     caseResults.push(result);
 
     console.log(
-      `→ ${test.id}: P=${result.precision}, R=${result.recall}, F1=${result.f1}`
+      `${test.id}: P=${result.precision}, R=${result.recall}, F1=${result.f1}`
     );
   }
 
-  // ---- Aggregate summary metrics ----
   const totalCases = caseResults.length;
 
   const macroPrecision =
@@ -82,14 +80,12 @@ async function runEvaluation() {
           (caseResults.reduce((sum, r) => sum + r.f1, 0) / totalCases).toFixed(4)
         );
 
-  // Accuracy = fraction of cases where at least one relevant chunk was retrieved,
-  // evaluated only on cases that actually have ground-truth chunks.
+  
   const casesWithGroundTruth = caseResults.filter((_, i) => {
     return evalCases[i].relevantChunks && evalCases[i].relevantChunks.length > 0;
   });
 
   const correctCases = casesWithGroundTruth.filter((r, i) => {
-    // For each such case, TP>0 means we retrieved at least one relevant chunk
     return r.tp > 0;
   }).length;
 
