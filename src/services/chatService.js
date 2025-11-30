@@ -33,7 +33,7 @@ export async function chatWithKnowledge({ sessionId, message }) {
         message
       );
       if (standalone && standalone.length > 0) {
-        console.log("Follow-up → standalone question:", standalone);
+        console.log("Follow-up => standalone question:", standalone);
         effectiveUserQuestion = standalone;
       }
     } catch (err) {

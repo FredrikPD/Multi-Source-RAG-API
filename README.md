@@ -140,7 +140,7 @@ The system detects when a user message is a follow-up question and automatically
 ## Production Considerations
 Key improvements I would implement to make the system scalable, secure, observable, and cost-efficient in a real production environment.
 
-### Production scalability
+### Scalability
 - **Database:** move from SQLite to PostgreSQL for better concurrency, indexing, and reliability.
 - **Vector DB:** run Qdrant in a clustered/managed setup instead of a single local instance.
 - **Ingestion jobs:** replace the in-memory `ingestJobs` map with a durable queue so jobs survive restarts and can be processed by multiple workers.

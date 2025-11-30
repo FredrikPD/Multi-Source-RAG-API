@@ -1,8 +1,10 @@
+// Script used to ingest a warranty document and capture chat responses for a fixed question set.
 import fs from "fs";
 import path from "path";
 import fetch from "node-fetch";
 import FormData from "form-data";
 
+// Base URL for the local API used to ingest documents and answer questions.
 const API_BASE = "http://localhost:3000";
 
 export const WARRANTY_QUESTIONS = [
@@ -38,6 +40,7 @@ export const WARRANTY_QUESTIONS = [
   },
 ];
 
+// Absolute path to the warranty document that will be ingested before querying.
 const DOCUMENT_PATH = path.join(
   process.cwd(),
   "eval",
@@ -45,7 +48,7 @@ const DOCUMENT_PATH = path.join(
   "Warranty_ServiceAgreement.docx"
 );
 
-
+// Uploads the warranty document to the ingestion endpoint and returns the document_id.
 async function ingestDocument() {
   console.log("\nINGESTING RefundPolicy.docx");
 
@@ -85,6 +88,7 @@ async function ingestDocument() {
   return data.document_id;
 }
 
+// Asks a single warranty question and returns the answer plus detailed source info.
 async function askQuestion(question) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: "POST",
@@ -116,6 +120,7 @@ async function askQuestion(question) {
   };
 }
 
+// Executes the question set and writes the responses to a results file.
 async function main() {
   const resultsDir = path.join(process.cwd(), "eval", "results");
   if (!fs.existsSync(resultsDir)) {
@@ -124,7 +129,7 @@ async function main() {
 
   const results = {};
   for (const q of WARRANTY_QUESTIONS) {
-    console.log(`\n--- Asking: ${q.id} ---`);
+    console.log(`\nAsking: ${q.id}`);
     const output = await askQuestion(q);
     results[q.id] = output;
   }

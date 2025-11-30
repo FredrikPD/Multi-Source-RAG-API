@@ -1,8 +1,10 @@
+// Evaluation harness that scores chat responses against ground truth chunk labels.
 import fs from "fs";
 import path from "path";
 import fetch from "node-fetch";
 import { evalCases } from "./cases.js";
 
+// Base URL for the chat endpoint the evaluation harness exercises.
 const API_BASE = "http://localhost:3000";
 
 async function runEvaluation() {
@@ -27,6 +29,7 @@ async function runEvaluation() {
     const data = await res.json();
     const returnedChunkIds = (data.sources || []).map((s) => s.chunk_id);
 
+    // Build sets so we can compute confusion-matrix counts for this case.
     const relevant = new Set(test.relevantChunks);
     const returned = new Set(returnedChunkIds);
 
@@ -80,7 +83,7 @@ async function runEvaluation() {
           (caseResults.reduce((sum, r) => sum + r.f1, 0) / totalCases).toFixed(4)
         );
 
-  
+  // Accuracy is only meaningful when the case declares at least one relevant chunk.
   const casesWithGroundTruth = caseResults.filter((_, i) => {
     return evalCases[i].relevantChunks && evalCases[i].relevantChunks.length > 0;
   });
@@ -104,7 +107,7 @@ async function runEvaluation() {
     accuracy,
   };
 
-  // ---- Save JSON (compact) ----
+  // Persist per-case metrics alongside the macro summary for later inspection.
   const outputDir = path.join(process.cwd(), "eval", "results");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -118,7 +121,7 @@ async function runEvaluation() {
 
   fs.writeFileSync(outputPath, JSON.stringify(payload, null, 2));
 
-  console.log(`\n📁 Saved compact evaluation results to: ${outputPath}\n`);
+  console.log(`\nSaved compact evaluation results to: ${outputPath}\n`);
   console.log("Summary:", summary);
 }
 
