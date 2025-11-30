@@ -98,24 +98,22 @@ flowchart TD
 | **services/textChunker.js** | Splits raw text into chunks suitable for embedding. |
 | **services/ingestion/ingestService.js** | Coordinates the ingestion pipeline (parse → chunk → embed → index). |
 | **services/ingestion/\*.js** | File format parsers for PDF, CSV, DOCX, and JSON. |
-| **llm/llmClient.js** | Handles outbound requests to the LLM provider. |
-| **llm/followup.js** | Generates optional refinements, summaries, or follow-up prompts for improved results. |
+| **llm/llmClient.js** | Sends generation requests to the LLM provider and returns model-generated answers used in chat responses. |
+| **llm/followup.js** | Detects whether a message is a follow-up question and helps convert it into a proper standalone query when needed. |
+| **llm/queryEnhancement.js** | Rewrites the user’s message into a search-optimized query to improve retrieval quality, using recent chat history for context. |
 
 ## Technical Decisions & Trade-offs
 ### Database
-SQLite was chosen as the database because it requires zero setup, works out-of-the-box, and is ideal for a small single-instance projects. A full database server like PostgreSQL would add unnecessary infrastructure without improving the solution for this scenario. Prisma acts as a type-safe ORM on top of SQLite, simplifying queries and schema management.
+SQLite was chosen as the database because it requires zero setup, works out-of-the-box, and is ideal for a small projects. A full database server like PostgreSQL would add unnecessary infrastructure without improving the solution for this scenario. Prisma is used as the ORM layer on top of SQLite. It provides a clean and type-safe way to work with the database and handles schema migrations automatically. Prisma was chosen because it offers the one of the fastest and most developer friendly workflow for a small project like this, without adding unnecessary complexity.
 
 ### Vector DB
-Qdrant was selected as the vector database since it’s lightweight, easy to run locally, and purpose-built for vector search. Managed services like pgvector in Postgres would introduce extra infrastructure complexity that isn’t needed for this project. A tradeoff with Qdrant is that it adds an extra Docker dependency compared to using pgvector inside the main database, but the improved search performance and simpler developer experience are worth it for this RAG-focused task.
+Qdrant was selected as the vector database since it’s lightweight, easy to implement, and purpose-built for vector search. Managed services like pgvector in Postgres would introduce extra infrastructure complexity that isn’t needed for this project. A tradeoff with Qdrant is that it adds an extra Docker dependency compared to using pgvector inside the main database, but the improved search performance and simpler developer experience are worth it for this RAG-focused task.
 
 ### Chunking Strategy
-The system uses fixed-size text chunks of 800 characters with 100 characters overlap.
-This size is large enough to preserve semantic meaning while keeping embeddings efficient.
-The 100-character overlap ensures continuity between chunks so important context isn’t lost at boundaries. This approach balances embedding cost, retrieval accuracy, and simplicity, making it a good fit for a multi-source RAG pipeline.
+The system uses fixed-size text chunks of 800 characters with 100 characters overlap. This size is large enough to preserve semantic meaning while keeping embeddings efficient. The 100-character overlap ensures continuity between chunks so important context isn’t lost at boundaries. This approach balances embedding cost, retrieval accuracy, and simplicity, making it a good fit for a multi-source RAG pipeline.
 
 ### Embedding Model
-The project uses OpenAI’s text-embedding-3-small model for generating vector embeddings.
-It provides strong semantic quality at low cost, it is fast, and produces compact vectors, which is ideal for a lightweight RAG pipeline. This model has one of the ideal balance between accuracy, speed, and token cost for this system. In addition OpenAI provides good documentation for setup.
+The project uses OpenAI’s text-embedding-3-small model for generating vector embeddings. It provides strong semantic quality at low cost, it is fast, and produces compact vectors, which is ideal for a lightweight RAG pipeline. This model has the ideal balance between accuracy, speed, and token cost for this system. In addition OpenAI provides good documentation for implementation.
 
 ### Design patterns
 
@@ -129,12 +127,18 @@ It provides strong semantic quality at low cost, it is fast, and produces compac
   HTTP routes → controllers → services is a simple layering pattern that keeps transport concerns (Express, validation) separate from domain logic (chat, ingestion, sessions).
 
 
-
 ### Async processing
 Ingestion jobs are handled via a simple in-memory job queue. `POST /ingest` starts an async job, stores it in `ingestJobs` with a `job_id`, and returns `202 Accepted` immediately. The actual work (parsing, chunking, embeddings, vector upserts) runs in the background, and the client polls `GET /ingest/:jobId` to track status (`queued`, `processing`, `completed`, `error`). This avoids blocking requests while keeping the implementation lightweight.
 
+### RAG Enhancements
+**Query Enhancement:**  
+User messages are rewritten into clearer, standalone queries before vector search. This improves retrieval quality by removing ambiguity, simplifying phrasing, and ensuring the search query contains all necessary context.
+
+**Follow-up Context Handling:**  
+The system detects when a user message is a follow-up question and automatically expands it to a standalone question using previous conversation history. This prevents loss of context across chat turns and significantly improves retrieval accuracy for multi-turn conversations.
+
 ## Production Considerations
-Key improvements i would implement to make the system scalable, secure, observable, and cost-efficient in a real production environment.
+Key improvements I would implement to make the system scalable, secure, observable, and cost-efficient in a real production environment.
 
 ### Production scalability
 - **Database:** move from SQLite to PostgreSQL for better concurrency, indexing, and reliability.
@@ -142,20 +146,16 @@ Key improvements i would implement to make the system scalable, secure, observab
 - **Ingestion jobs:** replace the in-memory `ingestJobs` map with a durable queue so jobs survive restarts and can be processed by multiple workers.
 - **API instances:** make the API stateless and run multiple Node.js instances behind a load balancer.
 - **File storage:** store original documents in object storage instead of the local filesystem.
-- **Observability:** add structured logging, metrics, and tracing to monitor latency, queue depth, and error rates.
 
 ### Security improvements
-
 - **Harden auth & access control:** secure all APIs with authentication and enforce per-user / per-tenant access to documents and sessions.
 - **Protect secrets:** store API keys and credentials in a secrets manager instead of `.env` files on the server.
 - **Enforce HTTPS & TLS:** terminate TLS at the load balancer and ensure all traffic (external and internal) is encrypted in transit.
 - **Validate & sanitize inputs:** add strict validation for request bodies, file uploads, and query params to avoid injection and abuse.
 - **Lock down file handling:** restrict allowed MIME types, size limits, and scan uploads for malware before processing.
-- **Add rate limiting & abuse protection:** rate limit endpoints (especially ingestion and chat) and add basic DDoS / brute-force protection.
-- **Harden infrastructure:** run services in isolated networks, with least-privilege IAM roles and restricted security groups.
+- **Add rate limiting & abuse protection:** rate limit endpoints and add basic DDoS / brute-force protection.
 
 ### Monitoring & Observability
-
 - **Metrics:** track request rate, latency, error rates, embedding/ingestion durations, and vector search performance.
 - **Logging:** use structured, centralized logging with correlation IDs per request/job.
 - **Tracing:** add distributed tracing around key flows: ingestion pipeline, embedding calls, vector DB queries, and LLM calls.
@@ -163,7 +163,6 @@ Key improvements i would implement to make the system scalable, secure, observab
 - **Alerts:** configure alerts on error spikes, slow responses, failed jobs, or degraded vector/LLM dependencies.
 
 ### Cost Optimizations
-
 - **Optimize embeddings:** batch texts, cache embeddings when possible, and avoid regenerating unchanged content.
 - **Use smaller models when appropriate:** choose cost-efficient embedding/LLM models for routine queries and reserve larger models for higher-value tasks.
 - **Reduce unnecessary storage:** clean old ingestion artifacts, prune unused vectors, and compress logs.
@@ -277,13 +276,16 @@ curl -X POST http://localhost:3000/chat -H "Content-Type: application/json" -d '
       "session_id": "<uuid>",
       "messages": [
         { "role": "user", "content": "<text>", "sources": null },
-        { "role": "assistant", "content": "<text>", "sources": [ { "document_id": "...", "chunk_id": "...", "score": <number> } ] }
+        { "role": "assistant", "content": "<text>", "sources": [ { "document_id": "...", "chunk_id": "...", "score": "<number>" } ] }
       ]
     }
     ```
   - `400 Bad Request` `{ "error": "Missing or invalid session id" }`
   - `404 Not Found` `{ "error": "Session not found" }`
 
+```bash
+curl http://localhost:3000/sessions/<sessionID>
+```
 
 ## Testing
 
@@ -322,7 +324,7 @@ npm run test:integration
 
 ## Evaluation
 
-Retrieval quality was assessed using 18 custom questions created from the sample documents in `eval/documents`. Each question was run through the actual system so that embeddings, vector search, and chunk retrieval behaved exactly as they do in real usage. For every question, the returned chunks were manually inspected, and the chunks that best answered the question were selected as the ground truth. These chunk IDs were then paired with the corresponding cases in `eval/cases.js`, forming a labeled set used to compute precision, recall, F1, and accuracy.
+Retrieval quality was evaluated using 18 custom questions created from the sample documents in `eval/documents`. Each question was run through the actual system so that embeddings, vector search, and chunk retrieval behaved exactly as they do in real usage. For every question, the returned chunks were manually inspected, and the chunks that best answered the question were selected as the ground truth. These chunk IDs were then paired with the corresponding cases in `eval/cases.js`, forming a labeled set used to compute precision, recall, F1, and accuracy.
 
 **Reproducibility note:** the exact results cannot be reproduced now because the SQLite database was cleaned during development, which caused chunk IDs to change. The evaluation logic remains valid, but the specific ground-truth chunk IDs represent the database state at the time of evaluation.
 
