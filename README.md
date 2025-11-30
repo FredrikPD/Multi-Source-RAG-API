@@ -135,7 +135,7 @@ Ingestion jobs are handled via a simple in-memory job queue. `POST /ingest` star
 User messages are rewritten into clearer, standalone queries before vector search. This improves retrieval quality by removing ambiguity, simplifying phrasing, and ensuring the search query contains all necessary context.
 
 **Follow-up Context Handling:**  
-The system detects when a user message is a follow-up question and automatically expands it to a standalone question using previous conversation history. This prevents loss of context across chat turns and significantly improves retrieval accuracy for multi-turn conversations.
+The system detects when a message is likely a follow-up question and automatically attaches it to the most recent conversation session when no session_id is provided. If session_id is provided and it is classified as follow-up it attaches the message to the specified session. It then expands the message into a standalone question using prior conversation history. This preserves context across turns and significantly improves retrieval accuracy for multi-turn interactions.
 
 ## Production Considerations
 Key improvements I would implement to make the system scalable, secure, observable, and cost-efficient in a real production environment.

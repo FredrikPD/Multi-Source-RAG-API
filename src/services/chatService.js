@@ -7,9 +7,11 @@ import { isFollowUpQuestion, buildStandaloneQuestion } from "../llm/followup.js"
 import { randomUUID } from "crypto";
 
 export async function chatWithKnowledge({ sessionId, message }) {
+  // First decide which session to use based on message + optional sessionId.
   let session = null;
+  const followUp = isFollowUpQuestion(message);
 
-  // Load or create session so conversation history can guide retrieval.
+  // 1) Explicit session id → always try to load that one
   if (sessionId) {
     session = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -17,16 +19,33 @@ export async function chatWithKnowledge({ sessionId, message }) {
     });
   }
 
-  if (!session) {
-    session = await prisma.session.create({ data: { id: randomUUID() } });
+  // 2) No explicit session, but it's a follow-up → attach to most recent session
+  if (!session && followUp) {
+    const lastSession = await prisma.session.findFirst({
+      orderBy: { createdAt: "desc" },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+
+    // Only use it if there is actually history to follow up on
+    if (lastSession && lastSession.messages.length > 0) {
+      session = lastSession;
+    }
   }
 
-  const historyMessages = session.messages?.map(m => ({ role: m.role, content: m.content })) || [];
+  // 3) Still no session? Create a brand new one
+  if (!session) {
+    session = await prisma.session.create({ data: { id: randomUUID() } });
+    // It will have no messages yet
+    session.messages = [];
+  }
+
+  const historyMessages =
+    session.messages?.map(m => ({ role: m.role, content: m.content })) || [];
 
   // Turn vague follow-ups into standalone questions to improve retrieval.
   let effectiveUserQuestion = message;
 
-  if (isFollowUpQuestion(message) && historyMessages.length > 0) {
+  if (followUp && historyMessages.length > 0) {
     try {
       const standalone = await buildStandaloneQuestion(
         historyMessages,
@@ -41,6 +60,7 @@ export async function chatWithKnowledge({ sessionId, message }) {
     }
   }
 
+  // Query enhancement still uses the original message + history.
   let effectiveQuery = effectiveUserQuestion;
   try {
     const rewritten = await rewriteQuery(historyMessages, message);
@@ -55,7 +75,7 @@ export async function chatWithKnowledge({ sessionId, message }) {
   // Retrieve top chunks using the enhanced query wording.
   const [queryEmbedding] = await embedTexts([effectiveQuery]);
   const retrieved = await vectorStore.search(queryEmbedding, 3);
-  
+
   const context = retrieved.map(r => r.text).join("\n---\n");
 
   const systemPrompt =
@@ -95,6 +115,6 @@ export async function chatWithKnowledge({ sessionId, message }) {
   return {
     session_id: session.id,
     answer,
-    sources: assistantMsg.sources
+    sources: assistantMsg.sources,
   };
 }
