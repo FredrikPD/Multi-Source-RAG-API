@@ -95,7 +95,7 @@ flowchart TD
 
 ## Technical Decisions & Trade-offs
 ### Database
-SQLite was chosen as the database because it requires zero setup, works out-of-the-box, and is ideal for a small single-instance projects. A full database server like PostgreSQL would add unnecessary infrastructure without improving the solution for this scenario.
+SQLite was chosen as the database because it requires zero setup, works out-of-the-box, and is ideal for a small single-instance projects. A full database server like PostgreSQL would add unnecessary infrastructure without improving the solution for this scenario. Prisma acts as a type-safe ORM on top of SQLite, simplifying queries and schema management.
 
 ### Vector DB
 Qdrant was selected as the vector database since it’s lightweight, easy to run locally, and purpose-built for vector search. Managed services like pgvector in Postgres would introduce extra infrastructure complexity that isn’t needed for this project. A tradeoff with Qdrant is that it adds an extra Docker dependency compared to using pgvector inside the main database, but the improved search performance and simpler developer experience are worth it for this RAG-focused task.
@@ -111,10 +111,10 @@ It provides strong semantic quality at low cost, it is fast, and produces compac
 
 ### Design patterns
 
-- **Strategy pattern (parsers):**  
+- **Strategy pattern:**  
   The ingestion layer uses separate parser modules (`pdfParser`, `csvParser`, `docxParser`, `jsonParser`) that implement the same responsibility. `ingestService` selects the appropriate parser based on file type, making it easy to add new formats without changing the core pipeline.
 
-- **Repository pattern (persistence):**  
+- **Repository pattern:**  
   `vectorStore` and `db/client` act as repositories that encapsulate access to the vector DB and relational DB. The rest of the code works with clear methods (e.g. add/search vectors, read/write entities) without depending on Qdrant/SQLite details.
 
 - **Layered controller–service architecture:**  
@@ -194,3 +194,67 @@ OPENAI_API_KEY=your-openai-key
 ```
 docker compose up --build
 ```
+
+### 4. Stopping and cleaning up
+Stop containers:
+```
+docker compose down
+```
+Stop + remove volumes (clears Qdrant data):
+```
+docker compose down -v
+```
+
+## API Documentation
+
+Base URL defaults to `http://localhost:3000`. All JSON requests require `Content-Type: application/json` unless otherwise noted. The API communicates with Qdrant at `http://qdrant:6333` inside the Docker network.
+
+### POST /ingest
+- Accepts `multipart/form-data` with a single file field named `file`.
+- Supported files: PDF, DOCX, CSV, JSON, TXT (MIME or extension based).
+- Responses:
+  - `202 Accepted` `{ "job_id": "<uuid>", "status": "queued" }`
+  - `400 Bad Request` `{ "error": "Missing file" }`
+- Errors during processing are surfaced when polling status (see below), not in this response.
+
+### GET /ingest/status/:jobId
+- Poll the ingestion job status.
+- Responses:
+  - `200 OK` (in progress) `{ "job_id": "<uuid>", "status": "queued" | "processing" }`
+  - `200 OK` (completed) `{ "job_id": "<uuid>", "status": "completed", "document_id": "<uuid>", "chunks": <number> }`
+  - `400 Bad Request` (unsupported file) `{ "job_id": "<uuid>", "status": "error", "error": "<message>", "code": "UNSUPPORTED_FILE_TYPE" }`
+  - `500 Internal Server Error` (other ingest failures) `{ "job_id": "<uuid>", "status": "error", "error": "<message>", "code": "<optional>" }`
+  - `404 Not Found` `{ "error": "Job not found" }`
+
+### POST /chat
+- Send a chat message to the RAG pipeline. Creates a session automatically if `session_id` is omitted.
+- Request body: `{ "message": "<user question>", "session_id"?: "<uuid>" }`
+- Responses:
+  - `200 OK`:
+    ```json
+    {
+      "session_id": "<uuid>",
+      "answer": "<assistant reply>",
+      "sources": [
+        { "document_id": "<uuid>", "chunk_id": "<chunk id>", "score":<similarity>}
+      ]
+    }
+    ```
+  - `400 Bad Request` for missing/empty `message` or non-string `session_id`.
+- Notes: history-aware; follow-up questions are rewritten for better retrieval; messages are persisted for the session.
+
+### GET /sessions/:id
+- Retrieve the full chat history for a session.
+- Responses:
+  - `200 OK`:
+    ```json
+    {
+      "session_id": "<uuid>",
+      "messages": [
+        { "role": "user", "content": "<text>", "sources": null },
+        { "role": "assistant", "content": "<text>", "sources": [ { "document_id": "...", "chunk_id": "...", "score": <number> } ] }
+      ]
+    }
+    ```
+  - `400 Bad Request` `{ "error": "Missing or invalid session id" }`
+  - `404 Not Found` `{ "error": "Session not found" }`
