@@ -19,10 +19,8 @@ export async function rewriteQuery(history, message) {
       role: "system",
       content:
         "Rewrite the user's latest question into a standalone, search-optimized query. " +
-        "Include important context from the conversation if needed. " +
         "Respond with only the rewritten query, no explanations.",
     },
-    ...history.slice(-4),
     { role: "user", content: message },
   ];
 
