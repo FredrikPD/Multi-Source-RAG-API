@@ -221,7 +221,7 @@ Base URL defaults to `http://localhost:3000`. All JSON requests require `Content
 - Supported files: PDF, DOCX, CSV, JSON, TXT (MIME or extension based).
 - Responses:
   - `202 Accepted` `{ "job_id": "<uuid>", "status": "queued" }`
-  - `400 Bad Request` `{ "error": "Missing file" }`
+  - `curl: (26) Failed to open/read local data from file/application`
 - Errors during processing are surfaced when polling status (see below), not in this response.
 
 ```bash
@@ -242,7 +242,7 @@ curl http://localhost:3000/ingest/status/<jobID>
 ```
 
 ### POST /chat
-- Send a chat message to the RAG pipeline. Creates a session automatically if `session_id` is omitted.
+- Send a chat message to the RAG pipeline. Creates a session automatically if `session_id` is omitted and question is not classified as follow-up.
 - Request body: `{ "message": "<user question>", "session_id"?: "<uuid>" }`
 - Responses:
   - `200 OK`:

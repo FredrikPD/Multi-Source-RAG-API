@@ -38,8 +38,7 @@ export async function chatWithKnowledge({ sessionId, message }) {
   }
 
   // Transform stored chat messages into the format the LLM expects.
-  const historyMessages =
-    session.messages?.map(m => ({ role: m.role, content: m.content })) || [];
+  const historyMessages = session.messages?.map(m => ({ role: m.role, content: m.content })) || [];
 
   let effectiveUserQuestion = message;
 
