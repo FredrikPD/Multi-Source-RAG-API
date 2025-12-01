@@ -1,3 +1,5 @@
+// Chat service that stitches together retrieval, query rewriting, and persistence
+// to answer user prompts with grounded context.
 import { prisma } from "../db/client.js";
 import { embedTexts } from "./embeddings.js";
 import { vectorStore } from "./vectorStore.js";
@@ -7,11 +9,10 @@ import { isFollowUpQuestion, buildStandaloneQuestion } from "../llm/followup.js"
 import { randomUUID } from "crypto";
 
 export async function chatWithKnowledge({ sessionId, message }) {
-  // First decide which session to use based on message + optional sessionId.
   let session = null;
   const followUp = isFollowUpQuestion(message);
 
-  // 1) Explicit session id → always try to load that one
+  // Try to hydrate the ongoing session to preserve conversation context.
   if (sessionId) {
     session = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -19,32 +20,30 @@ export async function chatWithKnowledge({ sessionId, message }) {
     });
   }
 
-  // 2) No explicit session, but it's a follow-up → attach to most recent session
+  // For follow-ups without a session, fall back to the latest session with history.
   if (!session && followUp) {
     const lastSession = await prisma.session.findFirst({
       orderBy: { createdAt: "desc" },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 
-    // Only use it if there is actually history to follow up on
     if (lastSession && lastSession.messages.length > 0) {
       session = lastSession;
     }
   }
 
-  // 3) Still no session? Create a brand new one
   if (!session) {
     session = await prisma.session.create({ data: { id: randomUUID() } });
-    // It will have no messages yet
     session.messages = [];
   }
 
+  // Transform stored chat messages into the format the LLM expects.
   const historyMessages =
     session.messages?.map(m => ({ role: m.role, content: m.content })) || [];
 
-  // Turn vague follow-ups into standalone questions to improve retrieval.
   let effectiveUserQuestion = message;
 
+  // If the message is a follow-up, attempt to rewrite it into a standalone question.
   if (followUp && historyMessages.length > 0) {
     try {
       const standalone = await buildStandaloneQuestion(
@@ -60,8 +59,9 @@ export async function chatWithKnowledge({ sessionId, message }) {
     }
   }
 
-  // Query enhancement still uses the original message + history.
   let effectiveQuery = effectiveUserQuestion;
+
+  // Enhance the user question to improve retrieval without changing the final answer.
   try {
     const rewritten = await rewriteQuery(historyMessages, message);
     if (rewritten && rewritten.length > 0) {
@@ -72,17 +72,16 @@ export async function chatWithKnowledge({ sessionId, message }) {
     console.warn("Query rewrite failed, falling back to original message:", err);
   }
 
-  // Retrieve top chunks using the enhanced query wording.
   const [queryEmbedding] = await embedTexts([effectiveQuery]);
   const retrieved = await vectorStore.search(queryEmbedding, 3);
 
+  // Assemble retrieved text into a context block used to ground the LLM response.
   const context = retrieved.map(r => r.text).join("\n---\n");
 
   const systemPrompt =
     "You are a helpful assistant. Answer using only the provided context. " +
     "If the context does not contain the answer, say you don't know.";
 
-  // Generate the final answer using the original phrasing but retrieved context.
   const answer = await llmClient.generate({
     system: systemPrompt,
     history: historyMessages,
@@ -90,7 +89,7 @@ export async function chatWithKnowledge({ sessionId, message }) {
     context,
   });
 
-  // Persist user and assistant turns for future context and auditing.
+  // Persist the user and assistant turns along with source metadata for traceability.
   await prisma.chatMessage.create({
     data: {
       sessionId: session.id,

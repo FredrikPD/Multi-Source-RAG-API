@@ -312,6 +312,11 @@ The project includes a suite of integration and unit tests built with **Vitest**
   Mocks Qdrant and verifies that search results are normalized into the simplified format used by the application.
 
 ### Running Tests
+
+Before running the test suite, install dependencies:
+```bash
+npm install
+```
 Full suite:
 ```bash
 npm run test
