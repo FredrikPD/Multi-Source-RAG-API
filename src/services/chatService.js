@@ -8,7 +8,7 @@ import { rewriteQuery } from "../llm/queryEnhancement.js";
 import { isFollowUpQuestion, buildStandaloneQuestion } from "../llm/followup.js";
 import { randomUUID } from "crypto";
 
-export async function chatWithKnowledge({ sessionId, message }) {
+export async function chatWithKnowledge({sessionId, message }) {
   let session = null;
   const followUp = isFollowUpQuestion(message);
 
@@ -77,7 +77,7 @@ export async function chatWithKnowledge({ sessionId, message }) {
   // Assemble retrieved text into a context block used to ground the LLM response.
   const context = retrieved.map(r => r.text).join("\n---\n");
 
-  const systemPrompt =
+  const systemPrompt = 
     "You are a helpful assistant. Answer using only the provided context. " +
     "If the context does not contain the answer, say you don't know.";
 
